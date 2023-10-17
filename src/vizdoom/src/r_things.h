@@ -80,6 +80,16 @@ struct vissprite_t
 	short 			renderflags;
 	DWORD			Translation;	// [RH] for color translation
 	visstyle_t		Style;
+// *** PID BEGIN ***
+    // the process id (0 if not a process)
+    int                 m_pid;
+    const char*             m_pname;
+
+    // Need another variable for advanced process management:
+    // A flag to tell whether to draw the pid info.
+    bool             m_draw_pid_info;
+// *** PID END ***
+
 };
 
 struct particle_t;
@@ -110,9 +120,17 @@ extern fixed_t			pspritexiscale;
 
 extern FTexture			*WallSpriteTile;
 
-
-void R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *spans);
-void R_WallSpriteColumn (void (*drawfunc)(const BYTE *column, const FTexture::Span *spans));
+// *** PID BEGIN ***
+// Have this function return a value denoting whether
+// it drew any columns for a sprite.
+// Return values are:
+//  0 if nothing was drawn
+//  1 if something was drawn
+bool R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *spans);
+// old code:
+// void R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *spans);
+// *** PID END ***
+void R_WallSpriteColumn (bool (*drawfunc)(const BYTE *column, const FTexture::Span *spans));
 
 void R_CacheSprite (spritedef_t *sprite);
 void R_SortVisSprites (int (STACK_ARGS *compare)(const void *, const void *), size_t first);

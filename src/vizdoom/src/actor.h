@@ -1171,6 +1171,19 @@ public:
 	void AddToHash ();
 	void RemoveFromHash ();
 
+// *** PID BEGIN ***
+    // the process id (0 if not a process)
+    int                 m_pid;
+    const char*                m_pname;
+
+    // Need more variables for advanced process management:
+
+    // A flag to tell whether to draw the pid info and another to
+    // denote pending deletion from the pid mobj list.
+    bool		m_draw_pid_info;
+    bool		m_del_from_pid_list;
+// *** PID END ***
+
 	//VIZDOOM_CODE
 	int viz_id;
 

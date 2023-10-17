@@ -1148,9 +1148,21 @@ void R_FillColumnHorizP (void)
 }
 
 // Same as R_DrawMaskedColumn() except that it always uses R_DrawColumnHoriz().
-
-void R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *span)
+// *** PID BEGIN ***
+// Have this function return a value denoting whether
+// it drew any columns for a sprite.
+// Return values are:
+//  0 if nothing was drawn
+//  1 if something was drawn
+bool R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *span)
+// old code:
+// void R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *span)
+// *** PID END ***
 {
+// *** PID BEGIN ***
+// Added this var to keep track of whether drawing occurred.
+    bool	drawing_occurred = 0;
+// *** PID END ***
 	while (span->Length != 0)
 	{
 		const int length = span->Length;
@@ -1223,6 +1235,11 @@ void R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *span)
 			dc_count = dc_yh - dc_yl + 1;
 			hcolfunc_pre ();
 
+// *** PID BEGIN ***
+// This is where we tell if something was drawn.
+        	drawing_occurred = 1;
+// *** PID END ***
+
             //VIZDOOM_CODE
             if(vizDepthMap!=NULL) {
                 for(int y = 0; y < dc_count; ++y) vizDepthMap->setPoint(dc_x, dc_yl + y);
@@ -1251,4 +1268,7 @@ nextpost:
 			back -= 2;
 		}
 	}
+// *** PID BEGIN ***
+    return drawing_occurred;
+// *** PID END ***
 }

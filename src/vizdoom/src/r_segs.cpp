@@ -171,7 +171,7 @@ CVAR(Bool, r_drawmirrors, true, 0)
 fixed_t *MaskedSWall;
 fixed_t MaskedScaleY;
 
-static void BlastMaskedColumn (void (*blastfunc)(const BYTE *pixels, const FTexture::Span *spans), FTexture *tex)
+static void BlastMaskedColumn (bool (*blastfunc)(const BYTE *pixels, const FTexture::Span *spans), FTexture *tex)
 {
 	// calculate lighting
 	if (fixedcolormap == NULL && fixedlightlev < 0)

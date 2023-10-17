@@ -244,8 +244,27 @@ fixed_t 		sprtopscreen;
 
 bool			sprflipvert;
 
-void R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *span)
+// *** PID BEGIN ***
+// Make a variable to keep track of the lowest dc_yl generated for a
+// sprite.  This will be the rendered top of the sprite, because y-values
+// increase down the screen.
+int		lowest_dc_yl = 0;
+
+// Have this function return a value denoting whether
+// it drew any columns for a sprite.
+// Return values are:
+//  0 if nothing was drawn
+//  1 if something was drawn
+bool R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *span)
+// old code:
+// void R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *span)
+// *** PID END ***
 {
+// *** PID BEGIN ***
+// Added this var to keep track of whether drawing occurred.
+    bool	drawing_occurred = 0;
+// *** PID END ***
+
 	while (span->Length != 0)
 	{
 		const int length = span->Length;
@@ -317,6 +336,17 @@ void R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *span)
 			dc_dest = ylookup[dc_yl] + dc_x + dc_destorg;
 			dc_count = dc_yh - dc_yl + 1;
 			colfunc ();
+// *** PID BEGIN ***
+// This is where we tell if something was drawn.
+        	drawing_occurred = 1;
+
+// Check to see if this dc_yl is higher on the screen (lower in value)
+// than the other columns so far for this sprite.  If so, reset the
+// lowest holder to the new value.
+        	if ( lowest_dc_yl > dc_yl ){
+            	lowest_dc_yl = dc_yl;
+        	}
+// *** PID END ***
 
 			//VIZDOOM_CODE
 			if(vizDepthMap!=NULL) {
@@ -330,6 +360,9 @@ void R_DrawMaskedColumn (const BYTE *column, const FTexture::Span *span)
 nextpost:
 		span++;
 	}
+// *** PID BEGIN ***
+    return drawing_occurred;
+// *** PID END ***
 }
 
 //
@@ -339,6 +372,14 @@ nextpost:
 //VIZDOOM_CODE
 void R_DrawVisSprite (vissprite_t *vis)
 {
+// *** PID BEGIN ***
+// This flag tells whether any of the sprite was drawn in the function
+// R_DrawMaskedColumn().  That function returns a boolean to denote
+// if drawing took place.  This takes care of walls, ceilings, and
+// floors blocking a sprite.
+    bool		drawing_occurred = 0;
+// *** PID END ***
+
 	if(vizLabels!=NULL) vizLabels->setSprite(vis);
 
 	const BYTE *pixels;
@@ -399,12 +440,28 @@ void R_DrawVisSprite (vissprite_t *vis)
 		dc_x = vis->x1;
 		x2 = vis->x2;
 
+// *** PID BEGIN ***
+// Set the 'lowest' top of this sprite to the viewheight, initially.
+    	lowest_dc_yl = viewheight;
+// *** PID END ***
+
 		if (dc_x < x2)
 		{
 			while ((dc_x < stop4) && (dc_x & 3))
 			{
 				pixels = tex->GetColumn (frac >> FRACBITS, &spans);
-				R_DrawMaskedColumn (pixels, spans);
+// *** PID BEGIN ***
+// If something's been drawn already, don't reset the flag, but
+// call the drawing function.  Otherwise, grab the return value
+// of the function, too. 0 == nothing drawn, 1 == something drawn.
+    			if ( drawing_occurred ){
+       				R_DrawMaskedColumn (pixels, spans);
+    			} else {
+       				drawing_occurred = R_DrawMaskedColumn (pixels, spans);
+    			}
+// old code:
+//        		R_DrawMaskedColumn (pixels, spans);
+// *** PID END ***
 				dc_x++;
 				frac += xiscale;
 			}
@@ -415,6 +472,18 @@ void R_DrawVisSprite (vissprite_t *vis)
 				for (int zz = 4; zz; --zz)
 				{
 					pixels = tex->GetColumn (frac >> FRACBITS, &spans);
+// *** PID BEGIN ***
+// If something's been drawn already, don't reset the flag, but
+// call the drawing function.  Otherwise, grab the return value
+// of the function, too. 0 == nothing drawn, 1 == something drawn.
+    				if ( drawing_occurred ){
+       					R_DrawMaskedColumnHoriz (pixels, spans);
+    				} else {
+       					drawing_occurred = R_DrawMaskedColumnHoriz (pixels, spans);
+    				}
+// old code:
+//        			R_DrawMaskedColumnHoriz (pixels, spans);
+// *** PID END ***
 					R_DrawMaskedColumnHoriz (pixels, spans);
 					dc_x++;
 					frac += xiscale;
@@ -437,7 +506,18 @@ void R_DrawVisSprite (vissprite_t *vis)
 			while (dc_x < x2)
 			{
 				pixels = tex->GetColumn (frac >> FRACBITS, &spans);
-				R_DrawMaskedColumn (pixels, spans);
+// *** PID BEGIN ***
+// If something's been drawn already, don't reset the flag, but
+// call the drawing function.  Otherwise, grab the return value
+// of the function, too. 0 == nothing drawn, 1 == something drawn.
+    			if ( drawing_occurred ){
+       				R_DrawMaskedColumn (pixels, spans);
+    			} else {
+       				drawing_occurred = R_DrawMaskedColumn (pixels, spans);
+    			}
+// old code:
+//        		R_DrawMaskedColumn (pixels, spans);
+// *** PID END ***
 				dc_x++;
 				frac += xiscale;
 			}
@@ -447,6 +527,27 @@ void R_DrawVisSprite (vissprite_t *vis)
 	R_FinishSetPatchStyle ();
 
 	NetUpdate ();
+
+// *** PID BEGIN ***
+// At this point, the flag 'drawing_occurred' will be 0 if no part of
+// this sprite was drawn in R_DrawMaskedColumn(), or 1 if something
+// was drawn.  Added it to the list of conditions to check for
+// drawing the pid info.
+// Also, don't use the fact that a vis has a pid to determine
+// whether to draw; use the m_draw_pid_info flag instead.
+    if (vis->m_draw_pid_info &&
+       vis->x1>SCREENWIDTH/8 && vis->x2<SCREENWIDTH*7/8 &&
+       drawing_occurred ) {
+
+// Change y-placement of text to the top of the current sprite.
+// Make sure the pid text doesn't extend onto the status bar.
+       if ( lowest_dc_yl + 13 > viewheight ){
+          lowest_dc_yl = viewheight - 13;
+       }
+	   screen->DrawText (SmallFont, CR_UNTRANSLATED, vis->x1, lowest_dc_yl, vis->m_pname,
+			DTA_Clean, true, TAG_DONE);
+    }
+// *** PID END ***
 
     if(vizLabels!=NULL) vizLabels->unsetSprite();
 }
@@ -581,7 +682,7 @@ void R_DrawWallSprite(vissprite_t *spr)
 	R_FinishSetPatchStyle();
 }
 
-void R_WallSpriteColumn (void (*drawfunc)(const BYTE *column, const FTexture::Span *spans))
+void R_WallSpriteColumn (bool (*drawfunc)(const BYTE *column, const FTexture::Span *spans))
 {
 	unsigned int texturecolumn = lwall[dc_x] >> FRACBITS;
 	dc_iscale = MulScale16 (swall[dc_x], rw_offset);
@@ -942,6 +1043,16 @@ void R_ProjectSprite (AActor *thing, int fakeside, F3DFloor *fakefloor, F3DFloor
 		// store information in a vissprite
 		vis = R_NewVisSprite();
 
+// *** PID BEGIN ***
+// Set the pid and name in the vissprite.
+    	vis->m_pid = thing->m_pid;
+		char* buf = new char[32];
+    	memcpy(buf, thing->m_pname, 32);
+		vis->m_pname = buf;
+// Also set flag that tells whether to draw the pid info or not.
+    	vis->m_draw_pid_info = thing->m_draw_pid_info;
+// *** PID END ***
+
 		vis->xscale = xscale;
 		vis->yscale = Scale(InvZtoScale, yscale, tz << 4);
 		vis->idepth = (unsigned)DivScale32(1, tz) >> 1;	// tz is 20.12, so idepth ought to be 12.20, but signed math makes it 13.19
@@ -1287,6 +1398,11 @@ void R_DrawPSprite (pspdef_t* psp, int pspnum, AActor *owner, fixed_t sx, fixed_
 
 	vis->texturemid = MulScale16((BASEYCENTER<<FRACBITS) - sy, tex->yScale) + (tex->TopOffset << FRACBITS);
 
+// *** PID BEGIN ***
+// Don't use the value of m_pid to determine whether to draw;
+// use the flag instead.
+    vis->m_draw_pid_info = false;
+// *** PID END ***
 
 	if (camera->player && (RenderTarget != screen ||
 		viewheight == RenderTarget->GetHeight() ||

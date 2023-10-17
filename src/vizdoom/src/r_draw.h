@@ -109,7 +109,17 @@ extern void (*R_DrawSpanMaskedAddClamp)(void);
 
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
-void R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *spans);
+// *** PID BEGIN ***
+// Have this function return a value denoting whether
+// it drew any columns for a sprite.
+// Return values are:
+//  0 if nothing was drawn
+//  1 if something was drawn
+bool R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *spans);
+// old code:
+// void R_DrawMaskedColumnHoriz (const BYTE *column, const FTexture::Span *spans);
+// *** PID END ***
+
 
 // [RH] Initialize the above pointers
 void R_InitColumnDrawers ();

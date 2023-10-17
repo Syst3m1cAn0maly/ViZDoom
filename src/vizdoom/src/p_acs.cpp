@@ -79,6 +79,10 @@
 #include "version.h"
 #include "p_effect.h"
 
+// PID BEGIN
+#include "pr_process.h"
+// PID END
+
 #include "g_shared/a_pickups.h"
 
 extern FILE *Logfile;
@@ -3736,6 +3740,10 @@ enum
 	APROP_StencilColor	= 41,
 	APROP_Friction		= 42,
 	APROP_DamageMultiplier=43,
+	APROP_Pid			= 44,
+	APROP_PName			= 45,
+	APROP_DrawPidInfo	= 46,
+
 };
 
 // These are needed for ACS's APROP_RenderStyle
@@ -3985,6 +3993,15 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 	case APROP_Friction:
 		actor->Friction = value;
+		break;
+	case APROP_Pid:
+		actor->m_pid = value;
+		break;
+	case APROP_PName:
+		actor->m_pname = FBehavior::StaticLookupString(value);
+		break;
+	case APROP_DrawPidInfo:
+		actor->m_draw_pid_info = value;
 
 	default:
 		// do nothing.
@@ -4086,6 +4103,9 @@ int DLevelScript::GetActorProperty (int tid, int property)
 	case APROP_NameTag:		return GlobalACSStrings.AddString(actor->GetTag());
 	case APROP_StencilColor:return actor->fillcolor;
 	case APROP_Friction:	return actor->Friction;
+	case APROP_Pid: 		return actor->m_pid;
+	case APROP_PName:		return GlobalACSStrings.AddString(actor->m_pname);
+	case APROP_DrawPidInfo: return actor->m_draw_pid_info;
 
 	default:				return 0;
 	}
@@ -6061,7 +6081,6 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				P_SpawnParticle(x, y, z, xvel, yvel, zvel, color, fullbright, startalpha, lifetime, size, fadestep, accelx, accely, accelz);
 		}
 		break;
-		
 		default:
 			break;
 	}
@@ -8572,7 +8591,6 @@ scriptwait:
 			break;
 
 		case PCD_SETAMMOCAPACITY:
-			if (activator != NULL)
 			{
 				const PClass *type = PClass::FindClass (FBehavior::StaticLookupString (STACK(2)));
 				AInventory *item;
@@ -8593,6 +8611,37 @@ scriptwait:
 				}
 			}
 			sp -= 2;
+			break;
+		case PCD_LISTPROCESS:
+			{
+				pr_list();
+			}
+			break;
+
+		case PCD_COUNTPROCESS:
+			{
+				PushToStack(pr_count_processes());
+			}
+			break;
+
+		case PCD_GETPID:
+			{
+				STACK(1) = pr_get_pid(STACK(1));
+			}
+			sp--;
+			break;
+		case PCD_GETPNAME:
+			{
+				STACK(1) = GlobalACSStrings.AddString(FString(pr_get_pname(STACK(1))));
+			}
+			sp--;
+			break;
+
+		case PCD_KILLPROCESS:
+			{
+				pr_kill(STACK(1));
+			}
+			sp--;
 			break;
 
 		case PCD_SETMUSIC:
