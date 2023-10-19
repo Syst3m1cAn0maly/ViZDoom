@@ -1046,9 +1046,11 @@ void R_ProjectSprite (AActor *thing, int fakeside, F3DFloor *fakefloor, F3DFloor
 // *** PID BEGIN ***
 // Set the pid and name in the vissprite.
     	vis->m_pid = thing->m_pid;
-		char* buf = new char[32];
-    	memcpy(buf, thing->m_pname, 32);
-		vis->m_pname = buf;
+		if (thing->m_pname) {
+			char* buf = new char[strlen(thing->m_pname)];
+			memcpy(buf, thing->m_pname, strlen(thing->m_pname));
+			vis->m_pname = buf;
+		}
 // Also set flag that tells whether to draw the pid info or not.
     	vis->m_draw_pid_info = thing->m_draw_pid_info;
 // *** PID END ***
