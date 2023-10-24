@@ -8628,13 +8628,11 @@ scriptwait:
 			{
 				STACK(1) = pr_get_pid(STACK(1));
 			}
-			sp--;
 			break;
 		case PCD_GETPNAME:
 			{
 				STACK(1) = GlobalACSStrings.AddString(FString(pr_get_pname(STACK(1))));
 			}
-			sp--;
 			break;
 
 		case PCD_KILLPROCESS:

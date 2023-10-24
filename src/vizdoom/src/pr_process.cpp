@@ -61,7 +61,7 @@ void pr_list(void) {
   char tty[256];
 
 
-  f = popen("echo list | nc -U /app/socket/dockerdoom.socket", "r");
+  f = popen("echo list | nc -U /ViZDoom/socket/dockerdoom.socket", "r");
 
   if (!f) {
     fprintf(stderr, "ERROR: pr_check could not open ps\n");
@@ -76,7 +76,7 @@ void pr_list(void) {
     if (read_fields == 1 && namebuf) {
       pid = hash(namebuf);
       fprintf(stderr, "Demon: %s, %d\n", namebuf, pid);
-      Process process;
+      Process process = {};
       process.pid = pid;
       process.pName = namebuf;
       processList.push_back(process);
@@ -102,7 +102,7 @@ FString pr_get_pname(int index) {
 void pr_kill(int pid) {
   char buf[256];
 
-  sprintf(buf, "echo \"kill %d\" | nc -U /app/socket/dockerdoom.socket", pid);
+  sprintf(buf, "echo \"kill %d\" | nc -U /ViZDoom/socket/dockerdoom.socket", pid);
   system(buf);
 }
 
